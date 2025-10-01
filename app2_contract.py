@@ -147,9 +147,10 @@ if st.button("Cari Rekomendasi"):
                 df_assets["YEAR"] = row["YEAR"]
                 st.dataframe(df_assets[["ASSET_NAME","YEAR"]]) # sama semua
                 #df_assets["SIMILARITY"] = row["SIMILARITY"] # sama semua
-                st.dataframe(df_assets)
+                # st.dataframe(df_assets)
 
         st.write("### 🔮 Layer 2: Rekomendasi Aset")
         # st.dataframe(rec_assets)
         st.dataframe(rec_assets[["ASSET_NAME","YEAR"]]) 
+
 
