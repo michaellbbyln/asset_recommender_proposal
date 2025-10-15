@@ -101,10 +101,17 @@ def recommend_contract(title: str, top_h=TOP_HISTORICAL, top_a=TOP_ASSET):
             break
 
     if asset_match:
-        # filter kontrak yang mengandung aset tersebut
-        subset = contracts[contracts["ASSET_NAME"].str.lower().str.contains(asset_match)]
+    # handle NaN dan non-string
+        subset = contracts[
+        contracts["ASSET_NAME"]
+        .astype(str)                    # ubah semua jadi string
+        .str.lower()
+        .fillna("")                     # isi NaN jadi string kosong
+        .str.contains(asset_match.lower(), na=False)  # ignore NaN
+    ]
     else:
         subset = contracts.copy()
+
     
     # lanjut TF-IDF di subset itu aja
     q_vec = vectorizer.transform([query])
@@ -165,6 +172,7 @@ if st.button("Cari Rekomendasi"):
         st.write("### 🔮 Layer 2: Rekomendasi Aset")
         # st.dataframe(rec_assets)
         st.dataframe(rec_assets[["ASSET_NAME","YEAR"]]) 
+
 
 
 
