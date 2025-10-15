@@ -89,29 +89,41 @@ M_contracts = vectorizer.fit_transform(contracts["CONTRACT_NAME_CLEAN"])
 # Recommend Function
 # =========================
 def recommend_contract(title: str, top_h=TOP_HISTORICAL, top_a=TOP_ASSET):
+    # ===== Bersihkan dan mapping alias =====
     query = clean_text(title)
+    query = apply_alias(query)  # tambahkan ini
+    
+    # 🔧 cari aset yg aliasnya cocok
+    asset_match = None
+    for main_asset, aliases in ALIAS.items():
+        if any(alias.lower() in query for alias in aliases) or main_asset in query:
+            asset_match = main_asset
+            break
+
+    if asset_match:
+        # filter kontrak yang mengandung aset tersebut
+        subset = contracts[contracts["ASSET_NAME"].str.lower().str.contains(asset_match)]
+    else:
+        subset = contracts.copy()
+    
+    # lanjut TF-IDF di subset itu aja
     q_vec = vectorizer.transform([query])
     cos = cosine_similarity(q_vec, M_contracts).ravel()
-
-    contracts["SIMILARITY"] = cos
-
-    # Group by contract_name supaya 1 kontrak = 1 baris
+    subset["SIMILARITY"] = cos[:len(subset)]
+    
     grouped = (
-        contracts.groupby("CONTRACT_NAME")
+        subset.groupby("CONTRACT_NAME")
         .agg({
             "ASSET_NAME": lambda x: list(x),
-            "YEAR": "max",                 # ambil tahun terakhir
-            "SIMILARITY": "max"            # ambil similarity tertinggi
+            "YEAR": "max",
+            "SIMILARITY": "max"
         })
         .reset_index()
         .sort_values(by="SIMILARITY", ascending=False)
         .head(top_h)
     )
 
-    # explode grouped agar 1 baris = 1 aset
     exploded = grouped.explode("ASSET_NAME")
-
-    # gunakan similarity kontrak sebagai skor aset
     asset_scores = (
         exploded.groupby("ASSET_NAME")
         .agg({"SIMILARITY":"max","YEAR":"first"})
@@ -121,6 +133,7 @@ def recommend_contract(title: str, top_h=TOP_HISTORICAL, top_a=TOP_ASSET):
     rec_assets = asset_scores.head(top_a)
 
     return grouped, rec_assets
+
 
 # =========================
 # Streamlit App
@@ -152,5 +165,6 @@ if st.button("Cari Rekomendasi"):
         st.write("### 🔮 Layer 2: Rekomendasi Aset")
         # st.dataframe(rec_assets)
         st.dataframe(rec_assets[["ASSET_NAME","YEAR"]]) 
+
 
 
