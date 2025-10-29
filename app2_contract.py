@@ -117,8 +117,9 @@ def recommend_contract(title: str, top_h=TOP_HISTORICAL, top_a=TOP_ASSET):
         ]
     else:
         subset = contracts.copy()
-
     
+    # pastikan hanya kontrak yang punya aset
+    subset = subset[subset["ASSET_NAME"].notna() & (subset["ASSET_NAME"].astype(str).str.strip() != "")]
     # lanjut TF-IDF di subset itu aja
     #q_vec = vectorizer.transform([query])
     #cos = cosine_similarity(q_vec, M_contracts).ravel()
@@ -178,6 +179,7 @@ if st.button("Cari Rekomendasi"):
         st.write("### 🔮 Layer 2: Rekomendasi Aset")
         # st.dataframe(rec_assets)
         st.dataframe(rec_assets[["ASSET_NAME","YEAR"]]) 
+
 
 
 
