@@ -100,23 +100,29 @@ def recommend_contract(title: str, top_h=TOP_HISTORICAL, top_a=TOP_ASSET):
             asset_match = main_asset
             break
 
+    # ===== Hitung cosine similarity ke semua kontrak =====
+    q_vec = vectorizer.transform([query])
+    cos = cosine_similarity(q_vec, M_contracts).ravel()
+    contracts["SIMILARITY"] = cos
+    
     if asset_match:
-    # handle NaN dan non-string
+        # Buat pola regex yang toleran spasi dan tanda baca
+        pattern = re.sub(r"[^\w\s]", "", asset_match.lower())  # hilangkan tanda baca di asset_match
         subset = contracts[
-        contracts["ASSET_NAME"]
-        .astype(str)                    # ubah semua jadi string
-        .str.lower()
-        .fillna("")                     # isi NaN jadi string kosong
-        .str.contains(asset_match.lower(), na=False)  # ignore NaN
-    ]
+            contracts["ASSET_NAME"]
+            .astype(str)
+            .str.lower()
+            .apply(lambda x: re.sub(r"[^\w\s]", "", x))  # hilangkan tanda baca di kolom ASSET_NAME
+            .str.contains(pattern, na=False)
+        ]
     else:
         subset = contracts.copy()
 
     
     # lanjut TF-IDF di subset itu aja
-    q_vec = vectorizer.transform([query])
-    cos = cosine_similarity(q_vec, M_contracts).ravel()
-    subset["SIMILARITY"] = cos[:len(subset)]
+    #q_vec = vectorizer.transform([query])
+    #cos = cosine_similarity(q_vec, M_contracts).ravel()
+    #subset["SIMILARITY"] = cos[:len(subset)]
     
     grouped = (
         subset.groupby("CONTRACT_NAME")
@@ -172,6 +178,7 @@ if st.button("Cari Rekomendasi"):
         st.write("### 🔮 Layer 2: Rekomendasi Aset")
         # st.dataframe(rec_assets)
         st.dataframe(rec_assets[["ASSET_NAME","YEAR"]]) 
+
 
 
 
